@@ -6,16 +6,18 @@ int main(int argc, char *argv[]) {
     bit *s;                      // binary sequence
     long n;                      // length
     long i;
-
+    FILE *in;
     double alpha = 0.05;         // significance level
     long m = 3;                  // poker test: length of subsequence
     long d = 8;                  // autocorr test: displacement shift
 
     // read sequence
-    n = atol(argv[1]);
-    s = calloc(n, sizeof(bit));
+    n  = 160;
+    s  = calloc(n, sizeof(bit));
+    in = fopen("data/basic.txt", "r");
     for (i = 0; i < n; i++)
-        scanf("%1hhd", &s[i]);
+        fscanf(in, "%1hhu", &s[i]);
+    fclose(in);
 
     test X[5];
     X[0] = freq(s, n, alpha);
@@ -25,7 +27,7 @@ int main(int argc, char *argv[]) {
     X[4] = autocorr(s, n, d, alpha);
 
     for (i = 0; i < 5; i++)
-        printf("X%d = %.4f\t%d\n", i+1, X[i].val, X[i].stat);
+        printf("X%d = %.4f\t%s\n", i+1, X[i].val, status_str[X[i].stat]);
 
     return 0;
 }

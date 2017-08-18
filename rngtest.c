@@ -9,9 +9,8 @@
 #include "rngtest.h"
 #include "lib/chisq.c"
 
-#define POW2(x) (1L << (x))
-#define SQ(x)   ((x)*(x))
-
+#define POW2(x)         (1L << (x))
+#define SQ(x)           ((x)*(x))
 #define FIPS_N          20000
 #define FIPS_N1_MIN     9654
 #define FIPS_N1_MAX     10346
@@ -19,12 +18,6 @@
 #define FIPS_POKER_MIN  1.03
 #define FIPS_POKER_MAX  57.4
 
-//const char *status_str[] = {
-    //"Test passed",
-    //"Test failed",
-    //"Error: m too big",
-    //"Error: d too big"
-//};
 
 long pow10_(long x) {
     long n = 1, i;

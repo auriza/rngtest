@@ -16,6 +16,13 @@ typedef enum status {
     ERR_D2BIG
 } status;
 
+static const char* status_str[] = {
+    "Passed",
+    "Failed",
+    "Error: m too big",
+    "Error: d too big",
+};
+
 typedef struct test {
     double val;
     status stat;
