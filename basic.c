@@ -3,21 +3,17 @@
 #include "rngtest.h"
 
 int main(int argc, char *argv[]) {
-    bit *s;                      // binary sequence
-    long n;                      // length
-    long i;
-    FILE *in;
-    double alpha = 0.05;         // significance level
-    long m = 3;                  // poker test: length of subsequence
-    long d = 8;                  // autocorr test: displacement shift
+    bit    *s;                      // random binary sequence
+    long   n;                       // length
+    long   i;
+    FILE   *in;
+    double alpha = 0.05;            // significance level
+    long   m = 3;                   // poker test: length of subsequence
+    long   d = 8;                   // autocorr test: displacement shift
 
     // read sequence
-    n  = 160;
-    s  = calloc(n, sizeof(bit));
-    in = fopen("data/basic.txt", "r");
-    for (i = 0; i < n; i++)
-        fscanf(in, "%1hhu", &s[i]);
-    fclose(in);
+    n = 160;
+    s = read_sequence("data/basic.txt", n);
 
     test X[5];
     X[0] = freq(s, n, alpha);

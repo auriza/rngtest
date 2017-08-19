@@ -4,6 +4,7 @@
  * Written in 2017 by Auriza Akbar <auriza.akbar@gmail.com>
  */
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 #include "rngtest.h"
@@ -24,6 +25,19 @@ long pow10_(long x) {
     for (i = 0; i < x; i++)
         n *= 10;
     return n;
+}
+
+bit *read_sequence(char *filename, long N) {
+    bit *S;
+    FILE *in;
+    long i;
+
+    S  = calloc(N, sizeof(bit));
+    in = fopen(filename, "r");
+    for (i = 0; i < N; i++)
+        fscanf(in, "%1hhu", &S[i]);
+    fclose(in);
+    return S;
 }
 
 /* Five basic tests --------------------------------------------------------- */
