@@ -10,20 +10,13 @@
 #include "rngtest.h"
 #include "lib/chisq.c"
 
-#define POW2(x)         (1L << (x))
-#define SQ(x)           ((x)*(x))
-#define FIPS_N          20000
-#define FIPS_N1_MIN     9654
-#define FIPS_N1_MAX     10346
-#define FIPS_POKER_M    4
-#define FIPS_POKER_MIN  1.03
-#define FIPS_POKER_MAX  57.4
+#define pow2(x)         (1L << (x))
+#define sq(x)           ((x)*(x))
 
-
-long pow10_(long x) {
+long _pow(int base, int exp) {
     long n = 1, i;
-    for (i = 0; i < x; i++)
-        n *= 10;
+    for (i = 0; i < exp; i++)
+        n *= base;
     return n;
 }
 
@@ -51,7 +44,7 @@ test freq(bit *S, long N, double a) {
     for (i = 0; i < N; i++)
         n[S[i]]++;
 
-    X  = (double) (SQ(n[0]-n[1])) / N;
+    X  = (double) (sq(n[0]-n[1])) / N;
     st = (X < critchi(a, 1)) ? PASS : FAIL;
     return (test) {X, st};
 }
@@ -68,8 +61,8 @@ test serial(bit *S, long N, double a) {
     for (i = 0; i < N-1; i++)
         nn[S[i]][S[i+1]]++;
 
-    X  = 4.0/(N-1) * (SQ(nn[0][0]) + SQ(nn[0][1]) + SQ(nn[1][0]) + SQ(nn[1][1]))
-           - 2.0/N * (SQ(n[0]) + SQ(n[1])) + 1;
+    X  = 4.0/(N-1) * (sq(nn[0][0]) + sq(nn[0][1]) + sq(nn[1][0]) + sq(nn[1][1]))
+           - 2.0/N * (sq(n[0]) + sq(n[1])) + 1;
     st = (X < critchi(a, 2)) ? PASS : FAIL;
     return (test) {X, st};
 }
@@ -82,22 +75,22 @@ test poker(bit *S, long N, long m, double alpha) {
     double  X;
     status  st;
 
-    if (k < 5*POW2(m))
+    if (k < 5*pow2(m))
         return (test) {INFINITY, ERR_M2BIG};
 
-    n = calloc(POW2(m), sizeof(long));
+    n = calloc(pow2(m), sizeof(long));
     for (i = 0; i < N-m+1; i += m) {
         val = 0;
         for (j = 0; j < m; j++)
             val += S[i+j] << (m-j-1);
         n[val]++;
     }
-    for (i = 0; i < POW2(m); i++)
-        n2_sum += SQ(n[i]);
+    for (i = 0; i < pow2(m); i++)
+        n2_sum += sq(n[i]);
     free(n);
 
-    X  = (double) POW2(m)/k * n2_sum - k;
-    st = (X < critchi(alpha, POW2(m)-1)) ? PASS : FAIL;
+    X  = (double) pow2(m)/k * n2_sum - k;
+    st = (X < critchi(alpha, pow2(m)-1)) ? PASS : FAIL;
     return (test) {X, st};
 }
 
@@ -111,7 +104,7 @@ test runs(bit *S, long N, double alpha) {
     status  st;
 
     for (i = 0; i < k; i++)
-        e[i] = (double) (N-i+2) / POW2(i+3);
+        e[i] = (double) (N-i+2) / pow2(i+3);
 
     prev  = S[0];
     count = 1;
@@ -129,8 +122,8 @@ test runs(bit *S, long N, double alpha) {
     }
 
     for (i = 0; i < k; i++) {
-        X += (SQ(B[i] - e[i])) / e[i];
-        X += (SQ(G[i] - e[i])) / e[i];
+        X += (sq(B[i] - e[i])) / e[i];
+        X += (sq(G[i] - e[i])) / e[i];
     }
     free(e); free(B); free(G);
     st = (X < critchi(alpha, 2*k-2)) ? PASS : FAIL;
@@ -168,10 +161,35 @@ test freq_dec(bit *S, long N, double alpha) {
         n[S[i]]++;
 
     for (i = 0; i < 10; i++)
-        n2_sum += SQ(n[i]);
+        n2_sum += sq(n[i]);
 
     X    = (double) 10/N * n2_sum - N;
     st = (X < critchi(alpha, 9)) ? PASS : FAIL;
+    return (test) {X, st};
+}
+
+test serial_dec(bit *S, long N, double a) {
+    long    n[10]      = {0};
+    long    nn[10][10] = {{0}};
+    long    n2_sum     = 0;
+    long    nn2_sum    = 0;
+    long    i, j;
+    double  X;
+    status  st;
+
+    for (i = 0; i < N; i++)
+        n[S[i]]++;
+    for (i = 0; i < N-1; i++)
+        nn[S[i]][S[i+1]]++;
+
+    for (i = 0; i < 10; i++) {
+        n2_sum += sq(n[i]);
+        for (j = 0; j < 10; j++)
+            nn2_sum += sq(nn[i][j]);
+    }
+
+    X  = 100.0/(N-1) * (nn2_sum) - 10.0/N * (n2_sum) + 1;
+    st = (X < critchi(a, 90)) ? PASS : FAIL;
     return (test) {X, st};
 }
 
@@ -183,22 +201,22 @@ test poker_dec(bit *S, long N, long m, double alpha) {
     double  X;
     status  st;
 
-    if (k < 5*pow10_(m))
+    if (k < 5*_pow(10, m))
         return (test) {INFINITY, ERR_M2BIG};
 
-    n = calloc(pow10_(m), sizeof(long));
+    n = calloc(_pow(10, m), sizeof(long));
     for (i = 0; i < N-m+1; i += m) {
         val = 0;
         for (j = 0; j < m; j++)
-            val += S[i+j] * pow10_(m-j-1);
+            val += S[i+j] * _pow(10, m-j-1);
         n[val]++;
     }
-    for (i = 0; i < pow10_(m); i++)
-        n2_sum += SQ(n[i]);
+    for (i = 0; i < _pow(10, m); i++)
+        n2_sum += sq(n[i]);
     free(n);
 
-    X  = (double) pow10_(m)/k * n2_sum - k;
-    st = (X < critchi(alpha, pow10_(m)-1)) ? PASS : FAIL;
+    X  = (double) _pow(10, m)/k * n2_sum - k;
+    st = (X < critchi(alpha, _pow(10, m)-1)) ? PASS : FAIL;
     return (test) {X, st};
 }
 
@@ -219,7 +237,7 @@ test autocorr_dec(bit *S, long N, long d, double alpha) {
 
     e = (double) (N-d)/10;
     for (i = 0; i < 10; i++)
-        X += SQ(n[i]-e) / e;
+        X += sq(n[i]-e) / e;
     st = (X < critchi(alpha, 9)) ? PASS : FAIL;
     return (test) {X, st};
 }
@@ -227,7 +245,9 @@ test autocorr_dec(bit *S, long N, long d, double alpha) {
 /* FIPS 140-1 tests --------------------------------------------------------- */
 
 test fips_monobit(bit *S) {
-    long    n1 = 0;
+    long    n1     = 0;
+    long    n1_min = 9654;
+    long    n1_max = 10346;
     long    i;
     double  X;
     status  st;
@@ -236,17 +256,72 @@ test fips_monobit(bit *S) {
         n1 += S[i];
 
     X  = (double) n1;
-    st = (FIPS_N1_MIN < n1
-                     && n1 < FIPS_N1_MAX) ? PASS : FAIL;
+    st = (n1_min < n1 && n1 < n1_max) ? PASS : FAIL;
     return (test) {X, st};
 }
 
 test fips_poker(bit *S) {
     test   X;
     status st;
+    double X_min = 1.03;
+    double X_max = 57.4;
 
-    X  = poker(S, FIPS_N, FIPS_POKER_M, NAN);
-    st = (FIPS_POKER_MIN < X.val
-                        && X.val < FIPS_POKER_MAX) ? PASS : FAIL;
+    X  = poker(S, FIPS_N, 4, INFINITY);
+    st = (X_min < X.val && X.val < X_max) ? PASS : FAIL;
     return (test) {X.val, st};
+}
+
+test fips_runs(bit *S) {
+    long    k  = 6;                         // max runs length to be considered
+    long    *B = calloc(k, sizeof(long));   // observed number of blocks
+    long    *G = calloc(k, sizeof(long));   // observed number of gaps
+    long    i, prev, count;
+    int     min[6] = {2267, 1079, 502, 223,  90,  90};  // required interval of runs
+    int     max[6] = {2733, 1421, 748, 402, 223, 223};
+    double  X  = 0.0;
+    status  st = PASS;
+
+
+    prev  = S[0];
+    count = 1;
+    for (i = 1; i <= FIPS_N; i++) {
+        if (S[i] == prev && i < FIPS_N)
+            count++;
+        else {
+            if (count > k) count = 6;
+            if (prev == 1) B[count-1]++;
+                      else G[count-1]++;
+            prev  = S[i];
+            count = 1;
+        }
+    }
+
+    for (i = 0; i < k; i++) {
+        if (B[i] < min[i] || B[i] > max[i]) st = FAIL; else X += 1.0;
+        if (G[i] < min[i] || G[i] > max[i]) st = FAIL; else X += 1.0;
+    }
+    free(B); free(G);
+    return (test) {X, st};
+}
+
+test fips_longrun(bit *S) {
+    long    i, prev, count, maxrun = 0;
+    double  X;
+    status  st;
+
+    prev  = S[0];
+    count = 1;
+    for (i = 1; i <= FIPS_N; i++) {
+        if (S[i] == prev && i < FIPS_N)
+            count++;
+        else {
+            if (count > maxrun) maxrun = count;
+            prev   = S[i];
+            count  = 1;
+        }
+    }
+
+    st = (maxrun < 34) ? PASS : FAIL;
+    X  = (double) maxrun;
+    return (test) {X, st};
 }

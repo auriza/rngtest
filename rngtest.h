@@ -7,6 +7,8 @@
 #ifndef RNGTEST_H_INCLUDED
 #define RNGTEST_H_INCLUDED
 
+#define FIPS_N  20000
+
 typedef unsigned char bit;
 
 typedef enum status {
@@ -39,22 +41,16 @@ test autocorr (bit *S, long N, long d, double alpha);
 
 /* Five basic tests (decimal digit) */
 test freq_dec    (bit *S, long N, double alpha);
-//test serial_dec  (bit *S, long N, double alpha);
-//test poker_dec   (bit *S, long N, long m, double alpha);
-//test runs_dec    (bit *S, long N, double alpha);
+test serial_dec  (bit *S, long N, double alpha);
+test poker_dec   (bit *S, long N, long m, double alpha);
+test runs_dec    (bit *S, long N, double alpha);
 test autocorr_dec(bit *S, long N, long d, double alpha);
 
 /* FIPS 140-1 tests */
 test fips_monobit (bit *S);
 test fips_poker   (bit *S);
-//test fips_runs    (bit *S);
-//test fips_longrun (bit *S);
-
-/* FIPS 140-2 tests */
-//test fips2_monobit(bit *S);
-//test fips2_poker  (bit *S);
-//test fips2_runs   (bit *S);
-//test fips2_longrun(bit *S);
+test fips_runs    (bit *S);
+test fips_longrun (bit *S);
 
 /* Monkey tests */
 
