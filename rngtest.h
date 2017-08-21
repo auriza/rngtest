@@ -30,7 +30,8 @@ typedef struct test {
     status stat;
 } test;
 
-bit *read_sequence(char *filename, long N);
+bit *read_sequence(char *filename, long *N);
+bit *fips_read_sequence(char *filename);
 
 /* Five basic tests (Menezes et al. 1996. Handbook of Applied Cryptography. pp 181-183) */
 test freq     (bit *S, long N, double alpha);

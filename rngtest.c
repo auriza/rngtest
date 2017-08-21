@@ -20,16 +20,35 @@ long _pow(int base, int exp) {
     return n;
 }
 
-bit *read_sequence(char *filename, long N) {
+bit *read_sequence(char *filename, long *N) {
     bit *S;
-    FILE *in;
-    long i;
+    FILE *fp;
+    long i, n;
 
-    S  = calloc(N, sizeof(bit));
-    in = fopen(filename, "r");
-    for (i = 0; i < N; i++)
-        fscanf(in, "%1hhu", &S[i]);
-    fclose(in);
+    fp = fopen(filename, "r");
+    fseek(fp, 0, SEEK_END);
+    n = ftell(fp);
+    rewind(fp);
+    S = calloc(n+1, sizeof(bit));
+    for (i = 0; !feof(fp); i++)
+        fscanf(fp, "%1hhu", &S[i]);
+    *N = i-1;
+    fclose(fp);
+
+    return S;
+}
+
+bit *fips_read_sequence(char *filename) {
+    bit *S;
+    FILE *fp;
+    long i, n;
+
+    fp = fopen(filename, "r");
+    S = calloc(FIPS_N, sizeof(bit));
+    for (i = 0; i < FIPS_N; i++)
+        fscanf(fp, "%1hhu", &S[i]);
+    fclose(fp);
+
     return S;
 }
 
@@ -95,10 +114,10 @@ test poker(bit *S, long N, long m, double alpha) {
 }
 
 test runs(bit *S, long N, double alpha) {
-    long    k = log2(N/20.0);               /* max runs length to be considered (simplified) */
-    double  *e = calloc(k, sizeof(double)); /* expected number of runs   */
-    long    *B = calloc(k, sizeof(long));   /* observed number of blocks */
-    long    *G = calloc(k, sizeof(long));   /* observed number of gaps   */
+    long    k = log2(N/20.0);               // max runs length to be considered (simplified)
+    double  *e = calloc(k, sizeof(double)); // expected number of runs
+    long    *B = calloc(k, sizeof(long));   // observed number of blocks
+    long    *G = calloc(k, sizeof(long));   // observed number of gaps
     long    i, prev, count;
     double  X = 0.0;
     status  st;
@@ -109,7 +128,7 @@ test runs(bit *S, long N, double alpha) {
     prev  = S[0];
     count = 1;
     for (i = 1; i <= N; i++) {
-        if (S[i] == prev && i < N)
+        if (i < N && S[i] == prev)
             count++;
         else {
             if (count <= k) {
@@ -133,7 +152,7 @@ test runs(bit *S, long N, double alpha) {
 test autocorr(bit *S, long N, long d, double alpha) {
     long    A = 0;
     long    i;
-    double  X;
+    double  Z;
     status  st;
 
     if (d > N/2)
@@ -142,9 +161,9 @@ test autocorr(bit *S, long N, long d, double alpha) {
     for (i = 0; i < N-d; i++)
         A += (S[i] ^ S[i+d]) ? 1 : 0;
 
-    X = (double) 2 * (A - (N-d)/2) / sqrt(N-d);
-    st = (X < critz(1 - alpha/2)) ? PASS : FAIL;
-    return (test) {X, st};
+    Z  = (double) 2 * (A - (N-d)/2) / sqrt(N-d);
+    st = (Z < critz(1 - alpha/2)) ? PASS : FAIL;
+    return (test) {Z, st};
 }
 
 
@@ -188,7 +207,7 @@ test serial_dec(bit *S, long N, double a) {
             nn2_sum += sq(nn[i][j]);
     }
 
-    X  = 100.0/(N-1) * (nn2_sum) - 10.0/N * (n2_sum) + 1;
+    X  = 100.0/(N-1) * nn2_sum - 10.0/N * n2_sum + 1;
     st = (X < critchi(a, 90)) ? PASS : FAIL;
     return (test) {X, st};
 }
@@ -218,6 +237,64 @@ test poker_dec(bit *S, long N, long m, double alpha) {
     X  = (double) _pow(10, m)/k * n2_sum - k;
     st = (X < critchi(alpha, _pow(10, m)-1)) ? PASS : FAIL;
     return (test) {X, st};
+}
+
+test runs_dec(bit *S, long N, double alpha) {
+    long   *n, i, j, sum = 0, prev, runlen, runs = 0;
+    double mean, var, subs, Z, pval;
+    status st;
+
+    n = calloc(10, sizeof(long));
+
+    prev = S[0];
+    n[prev]++;
+    runlen = 1;
+    for (i = 1; i < N; i++) {
+        n[S[i]]++;
+        if (S[i] == prev)
+            runlen++;
+        if ((S[i] != prev) || (i == N-1)) {
+            runs++;
+            prev   = S[i];
+            runlen = 1;
+        }
+    }
+
+    mean = 1.0;
+    var  = 0.0;
+    subs = 0.0;
+
+    for (i = 0; i < 10; i++) {
+        var += n[i]/(double)N * (N - n[i]);
+        for (j = 0; j < 10; j++) {
+            if (j != i) {
+                mean += 1.0 * n[i]/N*n[j];
+                var  += 2.0 * n[i]/N*n[j]/(N-1)*(N-n[j]-1);
+            }
+        }
+        var  += 2.0 * n[i]/N*(N-n[i])/(N-1)*(n[i]-1)*(N-n[i]-1);
+        subs += 1.0 * n[i]/N*(N-n[i]);
+    }
+    subs *= subs;
+    var  -= subs;
+    var   = fabs(var);
+    Z     = (runs - mean)/sqrt(fabs(var));
+    pval  = poz(Z);
+    st    = (Z < critz(1 - alpha/2)) ? PASS : FAIL;
+
+#ifdef DEBUG
+    printf("=======================================\n");
+    printf("Runs test for decimal digits\n");
+    printf("---------------------------------------\n");
+    printf("Runs    = %lu\n",  runs);
+    printf("Mean    = %.6f\n", mean);
+    printf("STDEV   = %.6f\n", sqrt(var));
+    printf("Z       = %.6f\n", Z);
+    printf("P-value = %.6f\n", pval);
+    printf("=======================================\n");
+#endif
+
+    return (test) {Z, st};
 }
 
 test autocorr_dec(bit *S, long N, long d, double alpha) {
